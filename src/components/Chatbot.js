@@ -774,7 +774,7 @@ const Chatbot = () => {
         <View style={styles.exampleQuestionsContainer}>
           <View style={styles.exampleQuestionsBubble}>
             <TouchableOpacity onPress={() => setShowTryAsking(!showTryAsking)} style={styles.titleContainer}>
-              <Ionicons name="bulb-outline" size={18} color="#1e40af" />
+              <Ionicons name="bulb-outline" size={18} color={showTryAsking ? "#f59e0b" : "#6b7280"} />
             </TouchableOpacity>
             
             {showTryAsking && (
