@@ -57,10 +57,28 @@ const Chatbot = () => {
   const [recordingStatus, setRecordingStatus] = useState('idle');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [hasKeyboardBeenShown, setHasKeyboardBeenShown] = useState(false);
+  const [fontSize, setFontSize] = useState('normal'); // 'small', 'normal', 'large'
   
   const scrollViewRef = useRef(null);
   
   // SafeAreaView will handle all safe areas automatically
+
+  // Get dynamic font size based on current setting
+  const getFontSize = (baseSize) => {
+    switch (fontSize) {
+      case 'small':
+        return baseSize * 0.9;
+      case 'large':
+        return baseSize * 1.2;
+      default:
+        return baseSize;
+    }
+  };
+
+  // Handle font size change
+  const handleFontSizeChange = (size) => {
+    setFontSize(size);
+  };
 
   // Initialize messages and speech recognition
   useEffect(() => {
@@ -548,9 +566,26 @@ const Chatbot = () => {
               <Text style={styles.headerSubtitle}>Weather Assistant</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.settingsButton}>
-            <Ionicons name="settings-outline" size={20} color="white" />
-          </TouchableOpacity>
+          <View style={styles.fontSizeButtonsHeader}>
+            <TouchableOpacity 
+              style={[styles.fontButtonHeader, fontSize === 'small' && styles.fontButtonHeaderActive]}
+              onPress={() => handleFontSizeChange('small')}
+            >
+              <Text style={[styles.fontButtonHeaderText, fontSize === 'small' && styles.fontButtonHeaderActiveText]}>A</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.fontButtonHeader, fontSize === 'normal' && styles.fontButtonHeaderActive]}
+              onPress={() => handleFontSizeChange('normal')}
+            >
+              <Text style={[styles.fontButtonHeaderText, fontSize === 'normal' && styles.fontButtonHeaderActiveText]}>AA</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.fontButtonHeader, fontSize === 'large' && styles.fontButtonHeaderActive]}
+              onPress={() => handleFontSizeChange('large')}
+            >
+              <Text style={[styles.fontButtonHeaderText, fontSize === 'large' && styles.fontButtonHeaderActiveText]}>A+</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </LinearGradient>
 
@@ -597,7 +632,8 @@ const Chatbot = () => {
               <Text
                 style={[
                   styles.messageText,
-                  msg.sender === 'user' ? styles.userText : styles.botText
+                  msg.sender === 'user' ? styles.userText : styles.botText,
+                  { fontSize: getFontSize(14) }
                 ]}
               >
                 {msg.text}
@@ -660,7 +696,7 @@ const Chatbot = () => {
         {/* Example Questions */}
         <View style={styles.exampleQuestionsContainer}>
           <View style={styles.exampleQuestionsBubble}>
-            <Text style={styles.exampleTitle}>Try asking:</Text>
+            <Text style={[styles.exampleTitle, { fontSize: getFontSize(14) }]}>Try asking:</Text>
             {currentQuestions.map((question, index) => (
               <TouchableOpacity
                 key={question.id}
@@ -668,7 +704,7 @@ const Chatbot = () => {
                 onPress={() => handleExampleQuestion(question.text)}
               >
                 <Ionicons name={question.icon} size={16} color="#3b82f6" />
-                <Text style={styles.exampleButtonText}>{question.text}</Text>
+                <Text style={[styles.exampleButtonText, { fontSize: getFontSize(14) }]}>{question.text}</Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity
@@ -690,7 +726,7 @@ const Chatbot = () => {
                 color={loadingQuestions ? "#9ca3af" : "#6b7280"}
                 style={loadingQuestions ? styles.spinningIcon : null}
               />
-              <Text style={[styles.exampleButtonText, { color: loadingQuestions ? '#9ca3af' : '#6b7280' }]}>
+              <Text style={[styles.exampleButtonText, { color: loadingQuestions ? '#9ca3af' : '#6b7280', fontSize: getFontSize(14) }]}>
                 {loadingQuestions ? 'Loading...' : (showAllQuestions ? 'Show less' : 'More questions')}
               </Text>
             </TouchableOpacity>
@@ -716,7 +752,7 @@ const Chatbot = () => {
                   recordingStatus === 'processing' ? 'hourglass-outline' :
                   isRecording ? 'stop' : 'mic'
                 }
-                size={20}
+                size={24}
                 color={
                   recordingStatus === 'processing' ? '#f59e0b' :
                   isRecording ? '#ef4444' : '#6b7280'
@@ -743,24 +779,11 @@ const Chatbot = () => {
               onPress={handleSendMessage}
               disabled={!message.trim() || isProcessing}
             >
-              <Ionicons name="send" size={20} color="white" />
+              <Ionicons name="send" size={24} color="white" />
             </TouchableOpacity>
           </View>
           
-          <View style={styles.inputFooter}>
-            <View style={styles.fontSizeButtons}>
-              <TouchableOpacity style={styles.fontButton}>
-                <Text style={styles.fontButtonText}>A</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.fontButton, styles.fontButtonActive]}>
-                <Text style={[styles.fontButtonText, styles.fontButtonActiveText]}>A+</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.helpText}>
-              <Ionicons name="return-down-back" size={12} color="#6b7280" />
-              {' '}Enter to send
-            </Text>
-          </View>
+
           </View>
         </View>
         </KeyboardAvoidingView>
@@ -812,9 +835,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.9,
   },
-  settingsButton: {
-    padding: 8,
-    borderRadius: 20,
+  fontSizeButtonsHeader: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  fontButtonHeader: {
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  fontButtonHeaderActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  fontButtonHeaderText: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
+  },
+  fontButtonHeaderActiveText: {
+    color: 'white',
+    fontWeight: '600',
   },
   chatContainer: {
     flex: 1,
@@ -962,18 +1006,16 @@ const styles = StyleSheet.create({
     paddingBottom: 8, // Minimal padding for better spacing
   },
   inputWrapper: {
-    padding: 12,
-    paddingBottom: 12,
+    padding: 16,
   },
   textInputContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 4,
-    
+    alignItems: 'center',
+    gap: 8,
   },
   micButton: {
-    padding: 8,
-    borderRadius: 20,
+    padding: 12,
+    borderRadius: 24,
     backgroundColor: '#f3f4f6',
   },
   micButtonRecording: {
@@ -990,55 +1032,23 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
-    maxHeight: 80,
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    maxHeight: 100,
     color: '#111827',
-    
+    minHeight: 48,
   },
   sendButton: {
     backgroundColor: '#3b82f6',
-    borderRadius: 20,
-    padding: 8,
+    borderRadius: 24,
+    padding: 12,
   },
   sendButtonDisabled: {
     backgroundColor: '#9ca3af',
   },
-  inputFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-    paddingHorizontal: 4,
-  },
-  fontSizeButtons: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  fontButton: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  fontButtonActive: {
-    backgroundColor: '#dbeafe',
-    borderColor: '#3b82f6',
-  },
-  fontButtonText: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  fontButtonActiveText: {
-    color: '#1e40af',
-  },
-  helpText: {
-    fontSize: 11,
-    color: '#6b7280',
-  },
+
 });
 
 export default Chatbot;
