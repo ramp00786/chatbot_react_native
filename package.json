@@ -23,7 +23,8 @@
     "react": "19.1.0",
     "react-native": "0.81.4",
     "react-native-animatable": "^1.4.0",
-    "react-native-linear-gradient": "^2.8.3"
+    "react-native-linear-gradient": "^2.8.3",
+    "react-native-safe-area-context": "^5.6.1"
   },
   "private": true
 }

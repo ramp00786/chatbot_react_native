@@ -10,11 +10,16 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
+  Keyboard,
 } from 'react-native';
+import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Speech from 'expo-speech';
+import { Audio } from 'expo-av';
+import { SafeAreaProvider, SafeAreaView as SafeAreaContextView } from 'react-native-safe-area-context';
 
 import TodayWeatherCard from './TodayWeatherCard';
 import HourlyWeatherCard from './HourlyWeatherCard';
@@ -48,8 +53,14 @@ const Chatbot = () => {
   const [showAllQuestions, setShowAllQuestions] = useState(false);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [allQuestionsCache, setAllQuestionsCache] = useState(null); // Cache for all questions
+  const [recording, setRecording] = useState(null);
+  const [recordingStatus, setRecordingStatus] = useState('idle');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [hasKeyboardBeenShown, setHasKeyboardBeenShown] = useState(false);
   
   const scrollViewRef = useRef(null);
+  
+  // SafeAreaView will handle all safe areas automatically
 
   // Initialize messages and speech recognition
   useEffect(() => {
@@ -65,6 +76,22 @@ const Chatbot = () => {
     
     // Load suggested questions with location
     loadSuggestedQuestions();
+    
+    // Add keyboard event listeners
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+      setHasKeyboardBeenShown(true);
+    });
+    
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+      // Keep hasKeyboardBeenShown as true to maintain consistent layout
+    });
+    
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
   }, []);
 
   const loadSuggestedQuestions = async (showAll = false) => {
@@ -107,9 +134,22 @@ const Chatbot = () => {
   };
 
   const checkSpeechSupport = async () => {
-    // For now, we'll enable speech output only (TTS)
-    // Voice input can be added later with a proper speech recognition service
-    setSpeechSupported(true);
+    try {
+      // Request microphone permissions
+      const { status } = await Audio.requestPermissionsAsync();
+      setSpeechSupported(status === 'granted');
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please enable microphone permission to use voice input feature.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Error checking speech support:', error);
+      setSpeechSupported(false);
+    }
   };
 
   const getCurrentTime = () => {
@@ -256,26 +296,171 @@ const Chatbot = () => {
 
     const newUserMessage = addUserMessage(userMessage);
     setMessage('');
+    
+    // Auto collapse suggested questions when user sends a message
+    if (showAllQuestions) {
+      loadSuggestedQuestions(false); // Show less questions
+    }
+    
     await processAndSendMessage(newUserMessage);
   };
 
   const startRecording = async () => {
-    // For demo purposes, we'll simulate voice input
-    // In production, integrate with a speech recognition service
-    Alert.alert(
-      'Voice Input Demo', 
-      'This would normally record your voice. For demo, we\'ll use a sample question.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel'
+    if (!speechSupported) {
+      Alert.alert(
+        'Permission Required',
+        'Please enable microphone permission to use voice input.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    if (recordingStatus === 'recording') {
+      await stopRecording();
+      return;
+    }
+
+    try {
+      setIsRecording(true);
+      setRecordingStatus('recording');
+
+      // Configure audio recording
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const recordingOptions = {
+        android: {
+          extension: '.m4a',
+          outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_MPEG_4,
+          audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AAC,
+          sampleRate: 44100,
+          numberOfChannels: 2,
+          bitRate: 128000,
         },
-        {
-          text: 'Try Sample',
-          onPress: () => handleSpeechResult('आज पुणे में मौसम कैसा रहेगा? बारिश होगी या नहीं?')
-        }
-      ]
-    );
+        ios: {
+          extension: '.m4a',
+          outputFormat: Audio.RECORDING_OPTION_IOS_OUTPUT_FORMAT_MPEG4AAC,
+          audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_MEDIUM,
+          sampleRate: 44100,
+          numberOfChannels: 2,
+          bitRate: 128000,
+          linearPCMBitDepth: 16,
+          linearPCMIsBigEndian: false,
+          linearPCMIsFloat: false,
+        },
+      };
+
+      const newRecording = new Audio.Recording();
+      await newRecording.prepareToRecordAsync(recordingOptions);
+      await newRecording.startAsync();
+      
+      setRecording(newRecording);
+      console.log('Recording started');
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      setIsRecording(false);
+      setRecordingStatus('idle');
+      Alert.alert(
+        'Recording Error',
+        'Failed to start recording. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!recording) return;
+
+    try {
+      setRecordingStatus('processing');
+      console.log('Stopping recording...');
+      
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      setRecording(null);
+      
+      console.log('Recording stopped and stored at:', uri);
+      
+      // For now, we'll simulate speech-to-text conversion
+      // In production, you would send the audio file to a speech recognition service
+      await processAudioFile(uri);
+      
+    } catch (error) {
+      console.error('Failed to stop recording:', error);
+      Alert.alert(
+        'Recording Error',
+        'Failed to process recording. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsRecording(false);
+      setRecordingStatus('idle');
+    }
+  };
+
+  const processAudioFile = async (audioUri) => {
+    try {
+      // TODO: Replace this simulation with actual speech-to-text processing
+      // In production, you would:
+      // 1. Send the audio file to a speech recognition service like Google Cloud Speech-to-Text
+      // 2. Or use a service like Azure Cognitive Services Speech-to-Text
+      // 3. Or integrate with OpenAI Whisper API
+      // 4. Or use AWS Transcribe
+      // 
+      // Example implementation with OpenAI Whisper:
+      // const formData = new FormData();
+      // formData.append('file', {
+      //   uri: audioUri,
+      //   type: 'audio/m4a',
+      //   name: 'recording.m4a',
+      // });
+      // formData.append('model', 'whisper-1');
+      // 
+      // const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Authorization': 'Bearer YOUR_OPENAI_API_KEY',
+      //     'Content-Type': 'multipart/form-data',
+      //   },
+      //   body: formData,
+      // });
+      // 
+      // const result = await response.json();
+      // const transcript = result.text;
+      
+      // For demo purposes, showing different sample questions based on random selection
+      const sampleQuestions = [
+        'आज मुंबई में मौसम कैसा है?',
+        'कल बारिश होगी क्या?',
+        'इस हफ्ते तापमान कैसा रहेगा?',
+        'आज पुणे में मौसम कैसा रहेगा?',
+        'दिल्ली में आज धूप निकलेगी?'
+      ];
+      
+      const randomQuestion = sampleQuestions[Math.floor(Math.random() * sampleQuestions.length)];
+      
+      // Show processing indicator
+      const processingMessage = addBotMessage('🎤 Processing your voice...');
+      
+      // Simulate processing delay
+      setTimeout(async () => {
+        // Remove processing message
+        setMessages(prev => prev.filter(msg => msg !== processingMessage));
+        
+        // Process the recognized text
+        await handleSpeechResult(randomQuestion);
+      }, 1500);
+      
+    } catch (error) {
+      console.error('Error processing audio:', error);
+      Alert.alert(
+        'Processing Error',
+        'Failed to process audio. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   const handleSpeechResult = async (transcript) => {
@@ -325,6 +510,11 @@ const Chatbot = () => {
 
   const handleExampleQuestion = (question) => {
     setMessage(question);
+    
+    // Auto collapse suggested questions when user selects an example
+    if (showAllQuestions) {
+      loadSuggestedQuestions(false); // Show less questions
+    }
   };
 
   const scrollToBottom = () => {
@@ -338,8 +528,9 @@ const Chatbot = () => {
   }, [messages]);
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
+    <SafeAreaProvider>
+      <SafeAreaContextView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+        <StatusBar style="light" />
       
       {/* Header */}
       <LinearGradient
@@ -362,13 +553,18 @@ const Chatbot = () => {
         </View>
       </LinearGradient>
 
-      {/* Chat Area */}
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.chatContainer}
-        contentContainerStyle={styles.chatContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView 
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
+        {/* Chat Area */}
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.chatContainer}
+          contentContainerStyle={styles.chatContent}
+          showsVerticalScrollIndicator={false}
+        >
         {/* Weather Cards */}
         <View style={styles.weatherCardsContainer}>
           <TodayWeatherCard />
@@ -499,24 +695,31 @@ const Chatbot = () => {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+        </ScrollView>
 
-      {/* Input Area */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.inputContainer}
-      >
-        <View style={styles.inputWrapper}>
-          <View style={styles.textInputContainer}>
+        {/* Input Area */}
+        <View style={styles.inputContainer}>
+          <View style={styles.inputWrapper}>
+            <View style={styles.textInputContainer}>
             <TouchableOpacity
-              style={styles.micButton}
+              style={[
+                styles.micButton,
+                isRecording && styles.micButtonRecording,
+                recordingStatus === 'processing' && styles.micButtonProcessing
+              ]}
               onPress={startRecording}
-              disabled={isProcessing || isRecording}
+              disabled={isProcessing || recordingStatus === 'processing'}
             >
               <Ionicons
-                name={isRecording ? 'stop' : 'mic'}
+                name={
+                  recordingStatus === 'processing' ? 'hourglass-outline' :
+                  isRecording ? 'stop' : 'mic'
+                }
                 size={20}
-                color={isRecording ? '#ef4444' : '#6b7280'}
+                color={
+                  recordingStatus === 'processing' ? '#f59e0b' :
+                  isRecording ? '#ef4444' : '#6b7280'
+                }
               />
             </TouchableOpacity>
             
@@ -557,9 +760,11 @@ const Chatbot = () => {
               {' '}Enter to send
             </Text>
           </View>
+          </View>
         </View>
       </KeyboardAvoidingView>
-    </View>
+      </SafeAreaContextView>
+    </SafeAreaProvider>
   );
 };
 
@@ -568,8 +773,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f3f4f6',
   },
+  keyboardContainer: {
+    flex: 1,
+  },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 50 : 40,
+    paddingTop: 12,
     paddingBottom: 12,
     paddingHorizontal: 12,
   },
@@ -607,7 +815,7 @@ const styles = StyleSheet.create({
   },
   chatContent: {
     padding: 12,
-    paddingBottom: Platform.OS === 'ios' ? 140 : 120, // Extra space for input area + safe area
+    paddingBottom: 20,
   },
   weatherCardsContainer: {
     marginBottom: 16,
@@ -742,18 +950,14 @@ const styles = StyleSheet.create({
     // This is a simple visual indication for now
   },
   inputContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: 'white',
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
-    paddingBottom: Platform.OS === 'ios' ? 40 : 60, // Safe area for mobile home indicator/buttons
-   
+    paddingBottom: 8, // Minimal padding for better spacing
   },
   inputWrapper: {
-    padding: 8,
+    padding: 12,
+    paddingBottom: 12,
   },
   textInputContainer: {
     flexDirection: 'row',
@@ -765,6 +969,16 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
     backgroundColor: '#f3f4f6',
+  },
+  micButtonRecording: {
+    backgroundColor: '#fee2e2',
+    borderWidth: 2,
+    borderColor: '#ef4444',
+  },
+  micButtonProcessing: {
+    backgroundColor: '#fef3c7',
+    borderWidth: 2,
+    borderColor: '#f59e0b',
   },
   textInput: {
     flex: 1,
