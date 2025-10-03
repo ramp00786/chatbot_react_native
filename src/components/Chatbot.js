@@ -13,9 +13,9 @@ import {
   SafeAreaView,
   Keyboard,
   Animated,
+  StatusBar,
 } from 'react-native';
 import Constants from 'expo-constants';
-import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Speech from 'expo-speech';
@@ -622,10 +622,18 @@ const Chatbot = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Set StatusBar on component mount
+  useEffect(() => {
+    StatusBar.setBarStyle('light-content', true);
+    if (Platform.OS === 'android') {
+      StatusBar.setBackgroundColor('#1d4ed8', true);
+    }
+  }, []);
+
   return (
     <SafeAreaProvider>
-      <SafeAreaContextView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
-        <StatusBar style="auto" backgroundColor="transparent" translucent={false} />
+      <SafeAreaContextView style={styles.container} edges={['bottom', 'left', 'right']}>
+        <StatusBar barStyle="light-content" backgroundColor="#1d4ed8" translucent={false} />
         
         <View style={styles.appContent}>
           {/* Header */}
@@ -890,7 +898,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 12,
+    paddingTop: Platform.OS === 'android' ? 40 : 50,
     paddingBottom: 12,
     paddingHorizontal: 12,
   },
