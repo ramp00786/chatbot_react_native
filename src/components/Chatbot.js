@@ -530,13 +530,14 @@ const Chatbot = () => {
   return (
     <SafeAreaProvider>
       <SafeAreaContextView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
-        <StatusBar style="light" />
-      
-      {/* Header */}
-      <LinearGradient
-        colors={['#2563eb', '#1d4ed8']}
-        style={styles.header}
-      >
+        <StatusBar style="auto" backgroundColor="transparent" translucent={false} />
+        
+        <View style={styles.appContent}>
+          {/* Header */}
+          <LinearGradient
+            colors={['#2563eb', '#1d4ed8']}
+            style={styles.header}
+          >
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <View style={styles.logoContainer}>
@@ -762,7 +763,8 @@ const Chatbot = () => {
           </View>
           </View>
         </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+        </View>
       </SafeAreaContextView>
     </SafeAreaProvider>
   );
@@ -771,7 +773,11 @@ const Chatbot = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#f3f4f6', // Same as app background
+  },
+  appContent: {
+    flex: 1,
+    backgroundColor: '#f3f4f6', // App background starts from header
   },
   keyboardContainer: {
     flex: 1,
