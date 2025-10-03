@@ -12,6 +12,7 @@ import {
   Platform,
   SafeAreaView,
   Keyboard,
+  Animated,
 } from 'react-native';
 import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
@@ -39,6 +40,78 @@ import { detectLangSmart } from '../lib/detectLangSmart';
 import { getRandomQuestions, getAllQuestionsWithCity } from '../lib/suggestedQuestions';
 
 const { width, height } = Dimensions.get('window');
+
+// Animated Processing Dots Component
+const AnimatedProcessingDots = ({ fontSize = 12 }) => {
+  const dot1Opacity = useRef(new Animated.Value(0.3)).current;
+  const dot2Opacity = useRef(new Animated.Value(0.3)).current;
+  const dot3Opacity = useRef(new Animated.Value(0.3)).current;
+  const dot4Opacity = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const animateDots = () => {
+      const duration = 600;
+      
+      Animated.sequence([
+        Animated.timing(dot1Opacity, {
+          toValue: 1,
+          duration: duration / 4,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dot2Opacity, {
+          toValue: 1,
+          duration: duration / 4,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dot3Opacity, {
+          toValue: 1,
+          duration: duration / 4,
+          useNativeDriver: true,
+        }),
+        Animated.timing(dot4Opacity, {
+          toValue: 1,
+          duration: duration / 4,
+          useNativeDriver: true,
+        }),
+        Animated.parallel([
+          Animated.timing(dot1Opacity, {
+            toValue: 0.3,
+            duration: duration / 2,
+            useNativeDriver: true,
+          }),
+          Animated.timing(dot2Opacity, {
+            toValue: 0.3,
+            duration: duration / 2,
+            useNativeDriver: true,
+          }),
+          Animated.timing(dot3Opacity, {
+            toValue: 0.3,
+            duration: duration / 2,
+            useNativeDriver: true,
+          }),
+          Animated.timing(dot4Opacity, {
+            toValue: 0.3,
+            duration: duration / 2,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start(() => {
+        animateDots(); // Loop the animation
+      });
+    };
+
+    animateDots();
+  }, [dot1Opacity, dot2Opacity, dot3Opacity, dot4Opacity]);
+
+  return (
+    <View style={styles.processingDotsContainer}>
+      <Animated.Text style={[styles.processingDot, { opacity: dot1Opacity, fontSize }]}>●</Animated.Text>
+      <Animated.Text style={[styles.processingDot, { opacity: dot2Opacity, fontSize }]}>●</Animated.Text>
+      <Animated.Text style={[styles.processingDot, { opacity: dot3Opacity, fontSize }]}>●</Animated.Text>
+      <Animated.Text style={[styles.processingDot, { opacity: dot4Opacity, fontSize }]}>●</Animated.Text>
+    </View>
+  );
+};
 
 const Chatbot = () => {
   const [message, setMessage] = useState('');
@@ -641,7 +714,7 @@ const Chatbot = () => {
                   <Text style={styles.voiceIndicator}> (Voice)</Text>
                 )}
                 {msg.sender === 'bot' && msg.isStreaming && (
-                  <Text style={styles.streamingIndicator}> ●●●●</Text>
+                  <AnimatedProcessingDots fontSize={getFontSize(12)} />
                 )}
               </Text>
               
@@ -929,6 +1002,16 @@ const styles = StyleSheet.create({
   streamingIndicator: {
     fontSize: 12,
     opacity: 0.7,
+  },
+  processingDotsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  processingDot: {
+    color: '#6b7280',
+    marginHorizontal: 1,
+    fontWeight: 'bold',
   },
   messageFooter: {
     flexDirection: 'row',
