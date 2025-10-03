@@ -773,8 +773,8 @@ const Chatbot = () => {
         {/* Example Questions */}
         <View style={styles.exampleQuestionsContainer}>
           <View style={styles.exampleQuestionsBubble}>
-            <TouchableOpacity onPress={() => setShowTryAsking(!showTryAsking)}>
-              <Text style={[styles.exampleTitle, { fontSize: getFontSize(14) }]}>Try asking:</Text>
+            <TouchableOpacity onPress={() => setShowTryAsking(!showTryAsking)} style={styles.titleContainer}>
+              <Ionicons name="bulb-outline" size={18} color="#1e40af" />
             </TouchableOpacity>
             
             {showTryAsking && (
@@ -1060,11 +1060,16 @@ const styles = StyleSheet.create({
     borderColor: '#bfdbfe',
     marginRight: 16, // Add right margin to prevent touching the edge
   },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   exampleTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#1e40af',
-    marginBottom: 8,
+    marginLeft: 6,
     textDecorationLine: 'underline',
   },
   exampleButton: {
