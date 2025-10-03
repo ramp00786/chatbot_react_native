@@ -134,6 +134,7 @@ const Chatbot = () => {
   const [showTryAsking, setShowTryAsking] = useState(true); // Show/hide Try asking section
   
   const scrollViewRef = useRef(null);
+  const messageSound = useRef(null);
   
   // SafeAreaView will handle all safe areas automatically
 
@@ -153,6 +154,31 @@ const Chatbot = () => {
   // Handle font size change
   const handleFontSizeChange = (size) => {
     setFontSize(size);
+  };
+
+  // Play message sound
+  const playMessageSound = async () => {
+    try {
+      if (messageSound.current) {
+        await messageSound.current.unloadAsync();
+      }
+      
+      const { sound } = await Audio.Sound.createAsync(
+        require('../../assets/2.mp3'),
+        { shouldPlay: true, volume: 0.5 }
+      );
+      
+      messageSound.current = sound;
+      
+      // Clean up after playing
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
+    } catch (error) {
+      console.log('Error playing message sound:', error);
+    }
   };
 
   // Initialize messages and speech recognition
@@ -358,6 +384,10 @@ const Chatbot = () => {
           const lastMessage = newMessages[newMessages.length - 1];
           if (lastMessage && lastMessage.isStreaming) {
             lastMessage.isStreaming = false;
+            // Play receive message sound when bot response is complete
+            if (!userMessage.isAudio) {
+              playMessageSound();
+            }
           }
           return newMessages;
         });
@@ -386,6 +416,9 @@ const Chatbot = () => {
   const handleSendMessage = async () => {
     const userMessage = message.trim();
     if (!userMessage) return;
+
+    // Play send message sound
+    playMessageSound();
 
     const newUserMessage = addUserMessage(userMessage);
     setMessage('');
