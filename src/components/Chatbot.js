@@ -131,6 +131,7 @@ const Chatbot = () => {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [hasKeyboardBeenShown, setHasKeyboardBeenShown] = useState(false);
   const [fontSize, setFontSize] = useState('normal'); // 'small', 'normal', 'large'
+  const [showTryAsking, setShowTryAsking] = useState(true); // Show/hide Try asking section
   
   const scrollViewRef = useRef(null);
   
@@ -392,6 +393,9 @@ const Chatbot = () => {
     if (showAllQuestions) {
       loadSuggestedQuestions(false); // Show less questions
     }
+    
+    // Hide Try asking section when user sends message
+    setShowTryAsking(false);
     
     await processAndSendMessage(newUserMessage);
   };
@@ -769,17 +773,22 @@ const Chatbot = () => {
         {/* Example Questions */}
         <View style={styles.exampleQuestionsContainer}>
           <View style={styles.exampleQuestionsBubble}>
-            <Text style={[styles.exampleTitle, { fontSize: getFontSize(14) }]}>Try asking:</Text>
-            {currentQuestions.map((question, index) => (
-              <TouchableOpacity
-                key={question.id}
-                style={styles.exampleButton}
-                onPress={() => handleExampleQuestion(question.text)}
-              >
-                <Ionicons name={question.icon} size={16} color="#3b82f6" />
-                <Text style={[styles.exampleButtonText, { fontSize: getFontSize(14) }]}>{question.text}</Text>
-              </TouchableOpacity>
-            ))}
+            <TouchableOpacity onPress={() => setShowTryAsking(!showTryAsking)}>
+              <Text style={[styles.exampleTitle, { fontSize: getFontSize(14) }]}>Try asking:</Text>
+            </TouchableOpacity>
+            
+            {showTryAsking && (
+              <>
+                {currentQuestions.map((question, index) => (
+                  <TouchableOpacity
+                    key={question.id}
+                    style={styles.exampleButton}
+                    onPress={() => handleExampleQuestion(question.text)}
+                  >
+                    <Ionicons name={question.icon} size={16} color="#3b82f6" />
+                    <Text style={[styles.exampleButtonText, { fontSize: getFontSize(14) }]}>{question.text}</Text>
+                  </TouchableOpacity>
+                ))}
             <TouchableOpacity
               style={[styles.exampleButton, styles.refreshButton, loadingQuestions && styles.loadingButton]}
               onPress={() => {
@@ -803,6 +812,8 @@ const Chatbot = () => {
                 {loadingQuestions ? 'Loading...' : (showAllQuestions ? 'Show less' : 'More questions')}
               </Text>
             </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
         </ScrollView>
@@ -1054,6 +1065,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e40af',
     marginBottom: 8,
+    textDecorationLine: 'underline',
   },
   exampleButton: {
     flexDirection: 'row',
