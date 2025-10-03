@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "rn-app",
-    "slug": "rn-app",
+    "name": "MausamGPT",
+    "slug": "mausam-gpt-rn",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,18 +12,40 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app uses microphone for voice input to ask weather questions.",
+        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to convert your voice to text for weather queries.",
+        "NSLocationWhenInUseUsageDescription": "This app uses location to provide accurate weather information for your area."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.INTERNET"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow MausamGPT to use your location to provide accurate weather information."
+        }
+      ]
+    ]
   }
 }
