@@ -1086,14 +1086,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
-    paddingBottom: 8, // Minimal padding for better spacing
+    paddingBottom: 0, // Minimal padding for better spacing
+    marginBottom: 20,
   },
   inputWrapper: {
     padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   textInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
   },
   micButton: {
