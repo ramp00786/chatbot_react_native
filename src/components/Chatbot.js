@@ -141,9 +141,10 @@ const Chatbot = () => {
   const getFontSize = (baseSize) => {
     switch (fontSize) {
       case 'small':
-        return baseSize * 0.9;
+        return Math.round(baseSize * 0.9);
       case 'large':
-        return baseSize * 1.2;
+        return Math.round(baseSize * 1.2);
+      case 'normal':
       default:
         return baseSize;
     }
